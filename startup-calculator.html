@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Startup Financial Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c14;
+    --surface: #0d1525;
+    --surface2: #111c30;
+    --border: #1e2d47;
+    --accent: #00d4ff;
+    --accent2: #7c3aed;
+    --accent3: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 32px 24px;
+  }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  header h1 {
+    font-family: var(--mono);
+    font-size: 22px;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+    font-weight: 700;
+  }
+
+  header .subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  .tag {
+    margin-left: auto;
+    background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.2);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+  }
+
+  .grid-main {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* SLIDERS PANEL */
+  .sliders-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .panel-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .slider-label {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+    letter-spacing: 0.3px;
+  }
+
+  .slider-value {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  input[type="range"] {
+    width: 100%;
+    height: 3px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+    position: relative;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,212,255,0.2);
+    cursor: pointer;
+    transition: box-shadow 0.15s;
+  }
+
+  input[type="range"]:hover::-webkit-slider-thumb {
+    box-shadow: 0 0 0 6px rgba(0,212,255,0.2);
+  }
+
+  .slider-track {
+    position: relative;
+  }
+
+  .slider-fill {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    height: 3px;
+    transform: translateY(-50%);
+    background: var(--accent);
+    border-radius: 2px;
+    pointer-events: none;
+    transition: width 0.05s;
+  }
+
+  /* RIGHT PANEL */
+  .right-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* METRICS CARDS */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--card-accent, var(--accent));
+    opacity: 0.8;
+  }
+
+  .metric-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    font-family: var(--mono);
+  }
+
+  .metric-value {
+    font-family: var(--mono);
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+    transition: color 0.3s;
+  }
+
+  .metric-unit {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* CHARTS GRID */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px;
+  }
+
+  .chart-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .chart-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  canvas {
+    width: 100% !important;
+    display: block;
+  }
+
+  /* Negative value styling */
+  .negative { color: var(--danger) !important; }
+  .positive { color: var(--accent3) !important; }
+  .warning { color: var(--warning) !important; }
+
+  @media (max-width: 1100px) {
+    .grid-main { grid-template-columns: 1fr; }
+    .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 600px) {
+    .charts-grid { grid-template-columns: 1fr; }
+    .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>RUNWAY</h1>
+    <span class="subtitle">// startup financial model</span>
+    <span class="tag">LIVE</span>
+  </header>
+
+  <div class="grid-main">
+    <!-- SLIDERS -->
+    <div class="sliders-panel">
+      <div class="panel-title">Parameters</div>
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <span class="slider-label">Monthly Revenue</span>
+          <span class="slider-value" id="val-revenue">$50,000</span>
+        </div>
+        <div class="slider-track">
+          <input type="range" id="sl-revenue" min="1000" max="500000" step="1000" value="50000">
+          <div class="slider-fill" id="fill-revenue"></div>
+        </div>
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <span class="slider-label">Monthly Growth Rate</span>
+          <span class="slider-value" id="val-growth">10%</span>
+        </div>
+        <div class="slider-track">
+          <input type="range" id="sl-growth" min="0" max="50" step="0.5" value="10">
+          <div class="slider-fill" id="fill-growth"></div>
+        </div>
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <span class="slider-label">Monthly Burn Rate</span>
+          <span class="slider-value" id="val-burn">$80,000</span>
+        </div>
+        <div class="slider-track">
+          <input type="range" id="sl-burn" min="5000" max="1000000" step="5000" value="80000">
+          <div class="slider-fill" id="fill-burn"></div>
+        </div>
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <span class="slider-label">Starting Capital</span>
+          <span class="slider-value" id="val-capital">$1,000,000</span>
+        </div>
+        <div class="slider-track">
+          <input type="range" id="sl-capital" min="50000" max="10000000" step="50000" value="1000000">
+          <div class="slider-fill" id="fill-capital"></div>
+        </div>
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <span class="slider-label">Customer Acquisition Cost</span>
+          <span class="slider-value" id="val-cac">$200</span>
+        </div>
+        <div class="slider-track">
+          <input type="range" id="sl-cac" min="10" max="5000" step="10" value="200">
+          <div class="slider-fill" id="fill-cac"></div>
+        </div>
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <span class="slider-label">Avg Revenue Per User / mo</span>
+          <span class="slider-value" id="val-arpu">$50</span>
+        </div>
+        <div class="slider-track">
+          <input type="range" id="sl-arpu" min="5" max="2000" step="5" value="50">
+          <div class="slider-fill" id="fill-arpu"></div>
+        </div>
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <span class="slider-label">Avg Customer Lifetime (months)</span>
+          <span class="slider-value" id="val-ltm">18</span>
+        </div>
+        <div class="slider-track">
+          <input type="range" id="sl-ltm" min="1" max="60" step="1" value="18">
+          <div class="slider-fill" id="fill-ltm"></div>
+        </div>
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <span class="slider-label">Gross Margin</span>
+          <span class="slider-value" id="val-margin">70%</span>
+        </div>
+        <div class="slider-track">
+          <input type="range" id="sl-margin" min="10" max="95" step="1" value="70">
+          <div class="slider-fill" id="fill-margin"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+      <!-- METRICS -->
+      <div class="metrics-grid">
+        <div class="metric-card" style="--card-accent: #00d4ff">
+          <div class="metric-label">RUNWAY</div>
+          <div class="metric-value" id="m-runway">--</div>
+          <div class="metric-unit">months remaining</div>
+        </div>
+        <div class="metric-card" style="--card-accent: #10b981">
+          <div class="metric-label">BREAK-EVEN</div>
+          <div class="metric-value" id="m-breakeven">--</div>
+          <div class="metric-unit">month</div>
+        </div>
+        <div class="metric-card" style="--card-accent: #7c3aed">
+          <div class="metric-label">LTV / CAC</div>
+          <div class="metric-value" id="m-ltvcac">--</div>
+          <div class="metric-unit">ratio</div>
+        </div>
+        <div class="metric-card" style="--card-accent: #f59e0b">
+          <div class="metric-label">MONTHLY P&L</div>
+          <div class="metric-value" id="m-pnl">--</div>
+          <div class="metric-unit">current</div>
+        </div>
+      </div>
+
+      <!-- CHARTS -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-title">Revenue Projection (24mo)</div>
+          <canvas id="chart-revenue" height="180"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Cash Runway</div>
+          <canvas id="chart-runway" height="180"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Break-even Analysis</div>
+          <canvas id="chart-breakeven" height="180"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Unit Economics</div>
+          <canvas id="chart-unit" height="180"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+const state = {
+  revenue: 50000,
+  growth: 10,
+  burn: 80000,
+  capital: 1000000,
+  cac: 200,
+  arpu: 50,
+  ltm: 18,
+  margin: 70
+};
+
+// ─── FORMATTERS ──────────────────────────────────────────────────────────────
+const fmt$ = v => {
+  if (Math.abs(v) >= 1e6) return '$' + (v/1e6).toFixed(1) + 'M';
+  if (Math.abs(v) >= 1e3) return '$' + (v/1e3).toFixed(0) + 'K';
+  return '$' + v.toFixed(0);
+};
+const fmtNum = v => {
+  if (v >= 1e6) return (v/1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return (v/1e3).toFixed(1) + 'K';
+  return v.toFixed(0);
+};
+
+// ─── SLIDER SETUP ────────────────────────────────────────────────────────────
+const sliders = [
+  { id: 'revenue', key: 'revenue', fmt: v => fmt$(v) },
+  { id: 'growth', key: 'growth', fmt: v => v + '%' },
+  { id: 'burn', key: 'burn', fmt: v => fmt$(v) },
+  { id: 'capital', key: 'capital', fmt: v => fmt$(v) },
+  { id: 'cac', key: 'cac', fmt: v => '$' + v },
+  { id: 'arpu', key: 'arpu', fmt: v => '$' + v },
+  { id: 'ltm', key: 'ltm', fmt: v => v + '' },
+  { id: 'margin', key: 'margin', fmt: v => v + '%' },
+];
+
+sliders.forEach(({ id, key, fmt }) => {
+  const input = document.getElementById('sl-' + id);
+  const val = document.getElementById('val-' + id);
+  const fill = document.getElementById('fill-' + id);
+
+  const updateFill = () => {
+    const min = +input.min, max = +input.max, cur = +input.value;
+    const pct = ((cur - min) / (max - min)) * 100;
+    fill.style.width = pct + '%';
+  };
+
+  input.addEventListener('input', () => {
+    state[key] = +input.value;
+    val.textContent = fmt(+input.value);
+    updateFill();
+    update();
+  });
+
+  updateFill();
+});
+
+// ─── CALCULATE ───────────────────────────────────────────────────────────────
+function calcProjection() {
+  const months = [];
+  let rev = state.revenue;
+  let cash = state.capital;
+  const gr = state.growth / 100;
+
+  for (let i = 0; i <= 24; i++) {
+    const cost = state.burn;
+    const pnl = rev - cost;
+    cash += pnl;
+    months.push({ month: i, revenue: rev, cost, pnl, cash });
+    rev = rev * (1 + gr);
+  }
+  return months;
+}
+
+function findBreakEven(months) {
+  for (let i = 0; i < months.length; i++) {
+    if (months[i].pnl >= 0) return i;
+  }
+  return null;
+}
+
+function calcRunway(months) {
+  for (let i = 0; i < months.length; i++) {
+    if (months[i].cash <= 0) return i;
+  }
+  return '24+';
+}
+
+function calcLTVCAC() {
+  const ltv = state.arpu * state.ltm * (state.margin / 100);
+  return { ltv, cac: state.cac, ratio: ltv / state.cac };
+}
+
+// ─── CANVAS DRAWING ──────────────────────────────────────────────────────────
+const COLORS = {
+  accent: '#00d4ff',
+  green: '#10b981',
+  purple: '#7c3aed',
+  yellow: '#f59e0b',
+  red: '#ef4444',
+  grid: 'rgba(30,45,71,0.8)',
+  text: '#64748b',
+};
+
+function setupCanvas(id) {
+  const canvas = document.getElementById(id);
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const w = rect.width - 40;
+  const h = parseInt(canvas.getAttribute('height'));
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { ctx, w, h };
+}
+
+function drawGrid(ctx, w, h, pad) {
+  ctx.strokeStyle = COLORS.grid;
+  ctx.lineWidth = 1;
+  const rows = 4;
+  for (let i = 0; i <= rows; i++) {
+    const y = pad.top + (h - pad.top - pad.bottom) * (i / rows);
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(w - pad.right, y);
+    ctx.stroke();
+  }
+}
+
+function drawAxisLabels(ctx, labels, w, h, pad, values, fmt) {
+  ctx.fillStyle = COLORS.text;
+  ctx.font = '10px Space Mono, monospace';
+  ctx.textAlign = 'center';
+  // X labels
+  const xStep = (w - pad.left - pad.right) / (labels.length - 1);
+  labels.forEach((l, i) => {
+    if (i % 6 === 0 || i === labels.length - 1) {
+      ctx.fillText(l, pad.left + i * xStep, h - pad.bottom + 14);
+    }
+  });
+  // Y labels
+  ctx.textAlign = 'right';
+  const mn = Math.min(...values);
+  const mx = Math.max(...values);
+  for (let i = 0; i <= 4; i++) {
+    const val = mx - (mx - mn) * (i / 4);
+    const y = pad.top + (h - pad.top - pad.bottom) * (i / 4);
+    ctx.fillText(fmt(val), pad.left - 6, y + 3);
+  }
+}
+
+function normY(val, mn, mx, h, pad) {
+  if (mx === mn) return pad.top + (h - pad.top - pad.bottom) / 2;
+  return pad.top + (1 - (val - mn) / (mx - mn)) * (h - pad.top - pad.bottom);
+}
+
+function drawLine(ctx, points, w, h, pad, mn, mx, color, fill) {
+  const xStep = (w - pad.left - pad.right) / (points.length - 1);
+  ctx.beginPath();
+  points.forEach((v, i) => {
+    const x = pad.left + i * xStep;
+    const y = normY(v, mn, mx, h, pad);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  if (fill) {
+    ctx.lineTo(pad.left + (points.length - 1) * xStep, h - pad.bottom);
+    ctx.lineTo(pad.left, h - pad.bottom);
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(0, pad.top, 0, h - pad.bottom);
+    grad.addColorStop(0, color + '30');
+    grad.addColorStop(1, color + '00');
+    ctx.fillStyle = grad;
+    ctx.fill();
+  }
+}
+
+// CHART 1: Revenue Projection
+function drawRevenue(months) {
+  const { ctx, w, h } = setupCanvas('chart-revenue');
+  ctx.clearRect(0, 0, w, h);
+  const pad = { top: 16, bottom: 24, left: 52, right: 8 };
+
+  const revs = months.map(m => m.revenue);
+  const costs = months.map(() => state.burn);
+  const mn = 0;
+  const mx = Math.max(...revs, state.burn) * 1.1;
+
+  drawGrid(ctx, w, h, pad);
+  drawAxisLabels(ctx, months.map((_, i) => 'M' + i), w, h, pad, [mn, mx], fmt$);
+  drawLine(ctx, revs, w, h, pad, mn, mx, COLORS.accent, true);
+  drawLine(ctx, costs, w, h, pad, mn, mx, COLORS.red, false);
+
+  // Legend
+  ctx.font = '9px Space Mono';
+  ctx.fillStyle = COLORS.accent; ctx.fillRect(pad.left, 4, 20, 2);
+  ctx.fillStyle = COLORS.text; ctx.textAlign = 'left'; ctx.fillText('Revenue', pad.left + 24, 8);
+  ctx.fillStyle = COLORS.red; ctx.fillRect(pad.left + 80, 4, 20, 2);
+  ctx.fillStyle = COLORS.text; ctx.fillText('Burn', pad.left + 104, 8);
+}
+
+// CHART 2: Cash Runway
+function drawRunwayChart(months) {
+  const { ctx, w, h } = setupCanvas('chart-runway');
+  ctx.clearRect(0, 0, w, h);
+  const pad = { top: 16, bottom: 24, left: 60, right: 8 };
+
+  const cashVals = months.map(m => m.cash);
+  const mn = Math.min(0, ...cashVals);
+  const mx = Math.max(...cashVals) * 1.05;
+
+  drawGrid(ctx, w, h, pad);
+  drawAxisLabels(ctx, months.map((_, i) => 'M' + i), w, h, pad, cashVals, fmt$);
+
+  // Zero line
+  const zeroY = normY(0, mn, mx, h, pad);
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = COLORS.red + '80';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.left, zeroY); ctx.lineTo(w - pad.right, zeroY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Color segments
+  const xStep = (w - pad.left - pad.right) / (months.length - 1);
+  cashVals.forEach((v, i) => {
+    if (i === 0) return;
+    const x0 = pad.left + (i - 1) * xStep;
+    const x1 = pad.left + i * xStep;
+    const y0 = normY(cashVals[i - 1], mn, mx, h, pad);
+    const y1 = normY(v, mn, mx, h, pad);
+    const color = v >= 0 ? COLORS.green : COLORS.red;
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
+    ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.stroke();
+  });
+
+  // Fill
+  ctx.beginPath();
+  cashVals.forEach((v, i) => {
+    const x = pad.left + i * xStep;
+    const y = normY(Math.max(0, v), mn, mx, h, pad);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.lineTo(w - pad.right, zeroY);
+  ctx.lineTo(pad.left, zeroY);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, pad.top, 0, zeroY);
+  grad.addColorStop(0, COLORS.green + '40');
+  grad.addColorStop(1, COLORS.green + '05');
+  ctx.fillStyle = grad;
+  ctx.fill();
+}
+
+// CHART 3: Break-even
+function drawBreakeven(months) {
+  const { ctx, w, h } = setupCanvas('chart-breakeven');
+  ctx.clearRect(0, 0, w, h);
+  const pad = { top: 16, bottom: 24, left: 52, right: 8 };
+
+  const pnls = months.map(m => m.pnl);
+  const mn = Math.min(...pnls) * 1.1;
+  const mx = Math.max(...pnls) * 1.1 || 1;
+
+  drawGrid(ctx, w, h, pad);
+  drawAxisLabels(ctx, months.map((_, i) => 'M' + i), w, h, pad, pnls, fmt$);
+
+  const xStep = (w - pad.left - pad.right) / (months.length - 1);
+
+  // Bars
+  const bw = Math.max(2, xStep * 0.6);
+  pnls.forEach((v, i) => {
+    const x = pad.left + i * xStep;
+    const zeroY = normY(0, mn, mx, h, pad);
+    const yv = normY(v, mn, mx, h, pad);
+    const bh = Math.abs(zeroY - yv);
+    const by = v >= 0 ? yv : zeroY;
+    ctx.fillStyle = v >= 0 ? COLORS.green + 'cc' : COLORS.red + 'cc';
+    ctx.fillRect(x - bw / 2, by, bw, bh);
+  });
+
+  // Zero line
+  const zeroY = normY(0, mn, mx, h, pad);
+  ctx.strokeStyle = COLORS.text;
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.left, zeroY); ctx.lineTo(w - pad.right, zeroY); ctx.stroke();
+}
+
+// CHART 4: Unit Economics
+function drawUnitEconomics() {
+  const { ctx, w, h } = setupCanvas('chart-unit');
+  ctx.clearRect(0, 0, w, h);
+
+  const { ltv, cac, ratio } = calcLTVCAC();
+  const arpu = state.arpu;
+  const margRev = arpu * (state.margin / 100);
+  const cogs = arpu * (1 - state.margin / 100);
+
+  // Horizontal bar chart
+  const items = [
+    { label: 'LTV', value: ltv, color: COLORS.purple },
+    { label: 'CAC', value: cac, color: COLORS.red },
+    { label: 'ARPU', value: arpu, color: COLORS.accent },
+    { label: 'Gross Profit/User', value: margRev, color: COLORS.green },
+    { label: 'COGS/User', value: cogs, color: COLORS.yellow },
+  ];
+
+  const maxVal = Math.max(...items.map(i => i.value));
+  const pad = { top: 8, bottom: 8, left: 110, right: 52 };
+  const barH = 18;
+  const gap = (h - pad.top - pad.bottom - items.length * barH) / (items.length - 1);
+  const barW = w - pad.left - pad.right;
+
+  items.forEach((item, i) => {
+    const y = pad.top + i * (barH + gap);
+    const bw = (item.value / maxVal) * barW;
+
+    // Label
+    ctx.fillStyle = COLORS.text;
+    ctx.font = '9px Space Mono';
+    ctx.textAlign = 'right';
+    ctx.fillText(item.label, pad.left - 8, y + barH / 2 + 4);
+
+    // Bar bg
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    ctx.fillRect(pad.left, y, barW, barH);
+
+    // Bar
+    const grad = ctx.createLinearGradient(pad.left, 0, pad.left + bw, 0);
+    grad.addColorStop(0, item.color + 'aa');
+    grad.addColorStop(1, item.color);
+    ctx.fillStyle = grad;
+    ctx.fillRect(pad.left, y, bw, barH);
+
+    // Value
+    ctx.fillStyle = COLORS.text;
+    ctx.textAlign = 'left';
+    ctx.fillText(fmt$(item.value), pad.left + bw + 6, y + barH / 2 + 4);
+  });
+
+  // LTV/CAC ratio badge
+  ctx.fillStyle = ratio >= 3 ? COLORS.green : ratio >= 1 ? COLORS.yellow : COLORS.red;
+  ctx.font = 'bold 13px Space Mono';
+  ctx.textAlign = 'center';
+  ctx.fillText('LTV/CAC: ' + ratio.toFixed(2) + 'x', w / 2 + 20, h - 2);
+}
+
+// ─── UPDATE ──────────────────────────────────────────────────────────────────
+function update() {
+  const months = calcProjection();
+  const breakEven = findBreakEven(months);
+  const runway = calcRunway(months);
+  const { ratio } = calcLTVCAC();
+  const curPnl = state.revenue - state.burn;
+
+  // Metrics
+  const runEl = document.getElementById('m-runway');
+  runEl.textContent = runway;
+  runEl.className = 'metric-value' + (typeof runway === 'number' && runway < 6 ? ' negative' : typeof runway === 'string' ? ' positive' : ' warning');
+
+  const beEl = document.getElementById('m-breakeven');
+  beEl.textContent = breakEven !== null ? 'Mo. ' + breakEven : 'Never';
+  beEl.className = 'metric-value' + (breakEven === null ? ' negative' : breakEven <= 12 ? ' positive' : ' warning');
+
+  const lcEl = document.getElementById('m-ltvcac');
+  lcEl.textContent = ratio.toFixed(2) + 'x';
+  lcEl.className = 'metric-value' + (ratio >= 3 ? ' positive' : ratio >= 1 ? ' warning' : ' negative');
+
+  const pnlEl = document.getElementById('m-pnl');
+  pnlEl.textContent = fmt$(curPnl);
+  pnlEl.className = 'metric-value' + (curPnl >= 0 ? ' positive' : ' negative');
+
+  // Charts
+  drawRevenue(months);
+  drawRunwayChart(months);
+  drawBreakeven(months);
+  drawUnitEconomics();
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+window.addEventListener('resize', () => setTimeout(update, 100));
+update();
+</script>
+</body>
+</html>
